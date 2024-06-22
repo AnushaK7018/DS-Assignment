@@ -1,0 +1,175 @@
+---
+title: "NYPD Shooting Incident Data Analysis"
+author: "A"
+date: "2024-06-22"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## NYPD Shooting Incident Data (Historic)
+
+This dataset consists of a detailed summary of all shooting incidents in NYC from 2006 to the end of the previous calendar year. The data is manually extracted quarterly and reviewed by the Office of Management Analysis and Planning before being published on the NYPD website. Each record represents a shooting incident and includes information about the event, location, and time of occurrence, as well as suspect and victim demographics.
+
+```{R}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(readr)
+```
+
+## Read The NYPD Shootings Data
+
+```{R}
+
+# NYPD Shootings URL
+NYPD_url <- "https://data.cityofnewyork.us/resource/833y-fsy8.csv"
+
+# Read the CSV file
+NYPD <- read_csv(NYPD_url)
+
+# Display the first few rows of the dataset
+head(NYPD)
+
+```
+
+## Inspect the Data
+
+```{r}
+# Check the structure of the data
+tail(NYPD)
+
+# Check the column names
+colnames(NYPD)
+```
+
+## Data Cleaning and Transformation
+
+```{r}
+
+# Clean and tidy the data
+NYPD_clean <- NYPD %>%
+  select(c("occur_date", "occur_time", "boro", "precinct", "statistical_murder_flag", "vic_age_group", "vic_sex", "vic_race")) %>%
+  mutate(
+    occur_date = ymd(occur_date),  # Adjusted date parsing function
+    occur_time = hms(occur_time),
+    statistical_murder_flag = as.logical(statistical_murder_flag),
+    shootings = 1,
+    year = year(occur_date),
+    day_of_week = wday(occur_date, label = TRUE)
+  )
+
+# Summary of the cleaned data
+summary(NYPD_clean)
+
+
+```
+
+## Analysis and Visualizations
+
+### Number of Incidents by Borough
+
+```{r}
+# Number of shootings by borough
+shootings_by_boro <- NYPD_clean %>%
+  group_by(boro) %>%
+  summarize(total_shootings = sum(shootings))
+
+# Plotting the number of shootings by borough
+ggplot(shootings_by_boro, aes(x = reorder(boro, -total_shootings), y = total_shootings, fill = boro)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of Shootings by Borough in NYC", x = "Borough", y = "Total Shootings") +
+  theme_minimal()
+
+
+```
+
+### Number of Shootings by Victim's Age Group
+
+```{r}
+# Number of shootings by victim's age group
+shootings_by_age_group <- NYPD_clean %>%
+  group_by(vic_age_group) %>%
+  summarize(total_shootings = sum(shootings))
+
+# Plotting the number of shootings by victim's age group
+ggplot(shootings_by_age_group, aes(x = reorder(vic_age_group, -total_shootings), y = total_shootings, fill = vic_age_group)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of Shootings by Victim's Age Group in NYC", x = "Victim's Age Group", y = "Total Shootings") +
+  theme_minimal()
+
+
+```
+
+### Number of Shootings by Victim's Sex
+
+```{r}
+# Number of shootings by victim's sex
+shootings_by_sex <- NYPD_clean %>%
+  group_by(vic_sex) %>%
+  summarize(total_shootings = sum(shootings))
+
+# Plotting the number of shootings by victim's sex
+ggplot(shootings_by_sex, aes(x = vic_sex, y = total_shootings, fill = vic_sex)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of Shootings by Victim's Sex in NYC", x = "Victim's Sex", y = "Total Shootings") +
+  theme_minimal()
+
+```
+
+### Number of Shootings by Victim's Race
+
+```{r}
+# Number of shootings by victim's race
+shootings_by_race <- NYPD_clean %>%
+  group_by(vic_race) %>%
+  summarize(total_shootings = sum(shootings))
+
+# Plotting the number of shootings by victim's race
+ggplot(shootings_by_race, aes(x = reorder(vic_race, -total_shootings), y = total_shootings, fill = vic_race)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of Shootings by Victim's Race in NYC", x = "Victim's Race", y = "Total Shootings") +
+  theme_minimal()
+
+
+```
+
+### Number of Shootings by Day of the Week
+
+```{r}
+# Number of shootings by day of the week
+shootings_by_day_of_week <- NYPD_clean %>%
+  group_by(day_of_week) %>%
+  summarize(total_shootings = sum(shootings))
+
+# Plotting the number of shootings by day of the week
+ggplot(shootings_by_day_of_week, aes(x = day_of_week, y = total_shootings, fill = day_of_week)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Number of Shootings by Day of the Week in NYC", x = "Day of the Week", y = "Total Shootings") +
+  theme_minimal()
+
+```
+
+## Sources of Bias
+
+### Several potential sources of bias may affect the accuracy and interpretation of this analysis:
+
+### 1. Data Quality:
+
+The dataset relies on accurate reporting by the NYPD. Any underreporting or misclassification of incidents could skew the results.
+
+### 2. Temporal Coverage:
+
+If the data does not span multiple years or has gaps, it may not accurately represent long-term trends. 
+### 3. Demographic Data: 
+
+Incomplete or inaccurate demographic information can lead to incorrect conclusions about the affected populations.
+
+### 4: Personal Bias :
+
+As an analyst, my interpretations are influenced by my background and experiences. To mitigate personal bias, I have adhered strictly to the data, using objective methods for analysis and visualizations. By relying on reproducible code and transparent methodologies, I aimed to ensure that the findings are based on the data itself, rather than subjective viewpoints.
